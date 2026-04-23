@@ -125,7 +125,23 @@ function movingAverage(arr,win=3){
 function getRMS(samples){let s=0; for(let i=0;i<samples.length;i++) s+=samples[i]*samples[i]; return Math.sqrt(s/samples.length);}
 function toStars(value,min,max){ let score=(safe(value,min)-min)/(max-min); score=clamp(score,0,1); return Math.round(score*5); }
 function renderStars(n){ n = clamp(Math.round(safe(n,0)),0,5); return "⭐".repeat(n) + "☆".repeat(5-n); }
-function sweetnessLabel(brix){if(brix<9)return "หวานน้อย"; if(brix<10.5)return "หวานปานกลาง"; if(brix<12)return "หวาน"; return "หวานมาก";}
+// เกณฑ์อ้างอิงจากข้อมูลจริง A1-E11 ที่วัดไว้
+function sweetnessLabel(brix){
+  if (brix < 8.0) return "หวานน้อย";
+  if (brix < 10.8) return "หวานอ่อน";
+  if (brix < 12.0) return "หวานดี";
+  return "หวานจัด";
+}
+function firmnessLabel(firmness){
+  if (firmness < 18) return "เนื้อค่อนข้างนิ่ม";
+  if (firmness < 30) return "เนื้อแน่นพอดี";
+  return "เนื้อแน่นกรอบ";
+}
+function juiceLabel(juice){
+  if (juice < 50) return "ฉ่ำน้อย";
+  if (juice < 63) return "ฉ่ำกำลังดี";
+  return "ฉ่ำมาก";
+}
 
 function ripenessFromGroup(g){
   switch(g){
@@ -178,11 +194,9 @@ function predictHollowAI(Q, tau, f_mean, f_std, f_variance, hollow_index) {
 }
 
 function hollowLabel(hollowPercent){
-  if (hollowPercent < 8) return "ปกติ";
-  if (hollowPercent < 12) return "เริ่มมีโพรง";
-  if (hollowPercent < 20) return "โพรงปานกลาง";
-  if (hollowPercent < 28) return "โพรงชัด";
-  return "โพรงหนัก";
+  if (hollowPercent < 8) return "ไม่มีโพรง";
+  if (hollowPercent < 15) return "เริ่มมีโพรง";
+  return "มีโพรง";
 }
 
 let audioContext=null, mediaStream=null, analyser=null, freqData=null, timeData=null, rafId=null;
@@ -417,12 +431,12 @@ function analyzeSession(){
   const melonScore = Math.round(clamp(score, 0, 100));
 
   let buyText = "", buyClass = "", scoreExplain = "";
-  if (melonScore >= 80 && hollowPercent < 10 && (group === "C" || group === "D")) {
-    buyText = "แนะนำให้ซื้อ"; buyClass = "buy"; scoreExplain = "คะแนนรวมดีมาก โครงสร้างดี เหมาะซื้อ";
-  } else if (melonScore >= 60 && hollowPercent < 20 && group !== "A") {
-    buyText = "พอซื้อได้"; buyClass = "maybe"; scoreExplain = "คุณภาพพอใช้ แนะนำดูราคาและสภาพภายนอกเพิ่ม";
+  if (melonScore >= 78 && hollowPercent < 10 && (group === "C" || group === "D")) {
+    buyText = "น่าซื้อ"; buyClass = "buy"; scoreExplain = "คุณภาพโดยรวมดีมาก เหมาะเลือกซื้อ";
+  } else if (melonScore >= 58 && hollowPercent < 20 && group !== "A") {
+    buyText = "พิจารณาได้"; buyClass = "maybe"; scoreExplain = "คุณภาพพอใช้ ควรดูสภาพภายนอกประกอบ";
   } else {
-    buyText = "ไม่แนะนำซื้อ"; buyClass = "no"; scoreExplain = "คะแนนรวมต่ำ หรือมีความเสี่ยงโพรง/สุกเกิน";
+    buyText = "ไม่ค่อยแนะนำ"; buyClass = "no"; scoreExplain = "ความเสี่ยงด้านคุณภาพค่อนข้างสูง";
   }
 
   updateWatermelonColor(ripe.flesh);
@@ -433,9 +447,9 @@ function analyzeSession(){
     ความถี่หลักเฉลี่ย: ${safe(avg.fPeak,getFallback("fPeak")).toFixed(1)} Hz<br>
     ระดับความสุก: ${ripe.label} (${ripe.detail})<br>
     ความหวาน: ${renderStars(sweetStars)} (${safe(brix,9).toFixed(1)} °Bx)<br>
-    ความกรอบ: ${renderStars(firmStars)} (${safe(firmness,8).toFixed(1)})<br>
-    ความฉ่ำ: ${renderStars(juiceStars)} (${safe(juice,60).toFixed(0)}%)<br>
-    โพรงภายใน: ${renderStars(hollowStars)} (${hollowPercent.toFixed(1)}%)<br>
+    ความกรอบ: ${renderStars(firmStars)} (${safe(firmness,8).toFixed(1)} - ${firmnessLabel(firmness)})<br>
+    ความฉ่ำ: ${renderStars(juiceStars)} (${safe(juice,60).toFixed(0)}% - ${juiceLabel(juice)})<br>
+    โพรงภายใน: ${renderStars(hollowStars)} (${hollowPercent.toFixed(1)}% - ${hollowLabel(hollowPercent)})<br>
     ความเชื่อมั่น: ${renderStars(confStars)} (${safe(conf,55).toFixed(0)}%)
   `;
 
@@ -450,11 +464,11 @@ function analyzeSession(){
   document.getElementById("brixVal").innerText=`${safe(brix,9).toFixed(1)} °Bx`;
   document.getElementById("sweetnessText").innerText=`${sweetnessLabel(brix)} • ${renderStars(sweetStars)}`;
   document.getElementById("firmVal").innerText=safe(firmness,8).toFixed(1);
-  document.getElementById("firmText").innerText=`${firmness>=15?"กรอบดี":firmness>=9?"กรอบปานกลาง":"กรอบน้อย"} • ${renderStars(firmStars)}`;
+  document.getElementById("firmText").innerText=`${firmnessLabel(firmness)} • ${renderStars(firmStars)}`;
   document.getElementById("juiceVal").innerText=`${safe(juice,60).toFixed(0)} %`;
-  document.getElementById("juiceText").innerText=`${juice>=74?"ฉ่ำมาก":juice>=62?"ฉ่ำปานกลาง":"ฉ่ำน้อย"} • ${renderStars(juiceStars)}`;
+  document.getElementById("juiceText").innerText=`${juiceLabel(juice)} • ${renderStars(juiceStars)}`;
   document.getElementById("hollowVal").innerText=`${hollowPercent.toFixed(1)} %`;
-  document.getElementById("hollowText").innerText=`${hollowText} • ${renderStars(hollowStars)}`;
+  document.getElementById("hollowText").innerText=`${hollowLabel(hollowPercent)} • ${renderStars(hollowStars)}`;
   document.getElementById("confVal").innerText=`${safe(conf,55).toFixed(0)} %`;
   document.getElementById("groupVal").innerText=`ช่วงสุก: ${group} • ${renderStars(confStars)}`;
 
