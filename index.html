@@ -89,51 +89,33 @@
   </div>
 </div>
 
+
 <script>
-const CAL = { Q:{a:143.851132,b:7.015090}, tau:{a:0.373214,b:-2.087487} };
+const CAL = { Q:{a:1.0,b:1.0}, tau:{a:1.0,b:1.0} };
+
+// Keep model object only if older UI references it somewhere
 const BRIX_MODEL = {
-  A:{a:13.918427,bQ:-0.001417,btau: 0.768016,bh:-3.922637},
-  B:{a:15.831436,bQ:-0.003101,btau:-2.525774,bh:-4.717459},
-  C:{a:14.194942,bQ:-0.020862,btau:-3.623425,bh: 7.962382},
-  D:{a: 5.934393,bQ:-0.003185,btau:-0.668988,bh: 8.998435},
-  E:{a: 5.541440,bQ: 0.014941,btau:-25.386356,bh: 4.624970}
+  A:{a:0,bQ:0,btau:0,bh:0},
+  B:{a:0,bQ:0,btau:0,bh:0},
+  C:{a:0,bQ:0,btau:0,bh:0},
+  D:{a:0,bQ:0,btau:0,bh:0},
+  E:{a:0,bQ:0,btau:0,bh:0}
 };
 
 function clamp(x,lo,hi){return Math.max(lo,Math.min(hi,x));}
 function safe(v, fallback=0){return (Number.isFinite(v) && !Number.isNaN(v)) ? v : fallback;}
 function getFallback(k){
   switch(k){
-    case "Q": return 10;
-    case "tau": return 0.08;
-    case "fMean": return 300;
-    case "fStd": return 50;
-    case "fVar": return 2500;
-    case "hollow": return 0.25;
+    case "Q": return 10.5;
+    case "tau": return 0.11;
+    case "fMean": return 280;
+    case "fStd": return 95;
+    case "fVar": return 10000;
+    case "hollow": return 0.18;
     case "fPeak": return 250;
     case "bw": return 25;
     default: return 0;
   }
-}
-function firmnessProxy(Q,fvar){return clamp(-10.248089+0.00583836*safe(Q,10)+0.00071951*safe(fvar,2500),0,30);}
-function juiceProxy(tau,Q){return clamp(56.841913-3.857017*safe(tau,0.08)+0.005154*safe(Q,10),30,100);}
-function hollowProbability(h){h=safe(h,0.25); if(h>0.42)return 0.90; if(h>0.30)return 0.65; if(h>0.22)return 0.35; return 0.10;}
-function sweetnessLabel(brix){if(brix<7)return "หวานน้อย"; if(brix<10)return "หวานปานกลาง"; if(brix<12)return "หวาน"; return "หวานมาก";}
-function ripenessFromGroup(g){
-  switch(g){
-    case "E": return {label:"ดิบ", detail:"เนื้อยังอ่อน", color:"#66bb6a", ami:15, flesh:"#c8f6c4"};
-    case "D": return {label:"ใกล้สุก", detail:"เริ่มพร้อมรับประทาน", color:"#ffee58", ami:40, flesh:"#ffe082"};
-    case "C": return {label:"สุกพอดี", detail:"เหมาะรับประทาน", color:"#ef5350", ami:65, flesh:"#ff5252"};
-    case "A": return {label:"สุกเกิน/อาจเน่า", detail:"เนื้ออาจเริ่มนิ่มหรือเสื่อมคุณภาพ", color:"#9e9e9e", ami:88, flesh:"#bdbdbd"};
-    default: return {label:"-", detail:"-", color:"#cfd8dc", ami:0, flesh:"#ff5252"};
-  }
-}
-function classifyPre(Qp){ Qp=safe(Qp,10); if(Qp<8)return "E"; if(Qp<15)return "D"; if(Qp<25)return "C"; return "A"; }
-function classifyPost(Q){ Q=safe(Q,10); if(Q<10)return "E"; if(Q<20)return "D"; if(Q<30)return "C"; return "A"; }
-function brixModel(group,Q,tau,h){
-  const m=BRIX_MODEL[group]||BRIX_MODEL.C;
-  let raw = m.a + m.bQ*safe(Q,10) + m.btau*safe(tau,0.08) + m.bh*safe(h,0.25);
-  raw = 0.72 * raw + 1.8;
-  return clamp(raw, 4.5, 14.0);
 }
 function movingAverage(arr,win=3){
   if(arr.length<=2)return arr.slice();
@@ -143,6 +125,65 @@ function movingAverage(arr,win=3){
 function getRMS(samples){let s=0; for(let i=0;i<samples.length;i++) s+=samples[i]*samples[i]; return Math.sqrt(s/samples.length);}
 function toStars(value,min,max){ let score=(safe(value,min)-min)/(max-min); score=clamp(score,0,1); return Math.round(score*5); }
 function renderStars(n){ n = clamp(Math.round(safe(n,0)),0,5); return "⭐".repeat(n) + "☆".repeat(5-n); }
+function sweetnessLabel(brix){if(brix<9)return "หวานน้อย"; if(brix<10.5)return "หวานปานกลาง"; if(brix<12)return "หวาน"; return "หวานมาก";}
+
+function ripenessFromGroup(g){
+  switch(g){
+    case "E": return {label:"ดิบ", detail:"เนื้อยังอ่อน", color:"#66bb6a", ami:15, flesh:"#c8f6c4"};
+    case "D": return {label:"ใกล้สุก", detail:"เริ่มพร้อมรับประทาน", color:"#ffee58", ami:40, flesh:"#ffe082"};
+    case "C": return {label:"สุกพอดี", detail:"เหมาะรับประทาน", color:"#ef5350", ami:65, flesh:"#ff5252"};
+    case "A": return {label:"สุกเกิน/อาจเน่า", detail:"เนื้ออาจเริ่มนิ่มหรือเสื่อมคุณภาพ", color:"#9e9e9e", ami:88, flesh:"#bdbdbd"};
+    default: return {label:"-", detail:"-", color:"#cfd8dc", ami:0, flesh:"#ff5252"};
+  }
+}
+
+// ===== Corrected ripeness classifier =====
+// Q-only was wrong. Use multi-feature rules derived from app-vs-real behavior.
+function classifyRipenessAI(Q, f_mean, f_std, f_variance, hollow_index){
+  Q = safe(Q, getFallback("Q"));
+  f_mean = safe(f_mean, getFallback("fMean"));
+  f_variance = safe(f_variance, getFallback("fVar"));
+  hollow_index = safe(hollow_index, getFallback("hollow"));
+
+  // Overripe / may be rotten: low Q + high hollow signature
+  if ((Q < 8.8 && hollow_index > 0.24) || (hollow_index > 0.30 && f_mean < 280)) return "A";
+
+  // Unripe: high Q and relatively structured / lower variance
+  if (Q >= 14.8 && f_variance < 11500) return "E";
+
+  // Near ripe: high-mid Q but more variance
+  if (Q >= 11.2) return "D";
+
+  // Ripe just right: middle-lower Q without severe hollow
+  return "C";
+}
+
+// ===== AI-fitted direct regressions from app vs real =====
+function predictBrixAI(Q, tau, f_mean, f_std, f_variance, hollow_index) {
+  let y = 18.309288 + (0.077074)*safe(Q,10) + (-0.126312)*safe(tau,0.11) + (-0.100922)*safe(f_mean,280) + (0.484935)*safe(f_std,95) + (-0.00068012)*safe(f_variance,10000) + (-72.380178)*safe(hollow_index,0.18);
+  // conservative pull toward realistic range
+  return Math.max(8.0, Math.min(y, 13.2));
+}
+function predictFirmnessAI(Q, tau, f_mean, f_std, f_variance, hollow_index) {
+  let y = 12.178444 + (0.044838)*safe(Q,10) + (0.073815)*safe(tau,0.11) + (0.295386)*safe(f_mean,280) + (-1.419989)*safe(f_std,95) + (0.00227155)*safe(f_variance,10000) + (150.926310)*safe(hollow_index,0.18);
+  return Math.max(3, Math.min(y, 24));
+}
+function predictJuiceAI(Q, tau, f_mean, f_std, f_variance, hollow_index) {
+  let y = 92.897751 + (-0.273790)*safe(Q,10) + (-0.407072)*safe(tau,0.11) + (-0.159756)*safe(f_mean,280) + (0.312748)*safe(f_std,95) + (-0.00029572)*safe(f_variance,10000) + (-24.195128)*safe(hollow_index,0.18);
+  return Math.max(52, Math.min(y, 86));
+}
+function predictHollowAI(Q, tau, f_mean, f_std, f_variance, hollow_index) {
+  let y = -1.100751 + (-0.002724)*safe(Q,10) + (-0.001046)*safe(tau,0.11) + (-0.000356)*safe(f_mean,280) + (0.009191)*safe(f_std,95) + (-0.00001828)*safe(f_variance,10000) + (0.542795)*safe(hollow_index,0.18);
+  return Math.max(0, Math.min(y, 0.35));
+}
+
+function hollowLabel(hollowPercent){
+  if (hollowPercent < 8) return "ปกติ";
+  if (hollowPercent < 12) return "เริ่มมีโพรง";
+  if (hollowPercent < 20) return "โพรงปานกลาง";
+  if (hollowPercent < 28) return "โพรงชัด";
+  return "โพรงหนัก";
+}
 
 let audioContext=null, mediaStream=null, analyser=null, freqData=null, timeData=null, rafId=null;
 const NUM_TAPS=3;
@@ -263,18 +304,19 @@ function extractFeaturesFromEvent(frames){
   for(let i=0;i<decay.length;i++){ if(decay[i]>maxEnv*0.10){ xs.push(i*dtFrame); ys.push(Math.log(decay[i])); } }
 
   let tau=getFallback("tau");
+  let tauWasFallback = true;
   if(xs.length>=4){
     const n=xs.length; let sx=0,sy=0,sxx=0,sxy=0;
     for(let i=0;i<n;i++){sx+=xs[i]; sy+=ys[i]; sxx+=xs[i]*xs[i]; sxy+=xs[i]*ys[i];}
     const denom=n*sxx-sx*sx;
     if(denom!==0){
       const slope=(n*sxy-sx*sy)/denom;
-      if(slope<0 && isFinite(-1/slope)) tau=-1/slope;
+      if(slope<0 && isFinite(-1/slope)){ tau=-1/slope; tauWasFallback=false; }
     }
   }
 
-  const quality = assessSignalQuality({Q, bw, fPeak, fMean, fStd, tau, magSum});
-  return {fPeak,Q,tau,fMean,fStd,fVar,hollow,bw,quality};
+  const quality = assessSignalQuality({Q, bw, fPeak, fMean, fStd, tau, magSum, tauWasFallback});
+  return {fPeak,Q,tau,fMean,fStd,fVar,hollow,bw,quality,tauWasFallback};
 }
 
 function assessSignalQuality(feat){
@@ -284,6 +326,7 @@ function assessSignalQuality(feat){
   if(!isFinite(feat.tau) || feat.tau <= 0) score -= 20;
   if(!isFinite(feat.fPeak) || feat.fPeak < 60 || feat.fPeak > 850) score -= 15;
   if(!isFinite(feat.magSum) || feat.magSum < 0.001) score -= 20;
+  if(feat.tauWasFallback) score -= 12;
   score = clamp(score, 0, 100);
   if(score >= 75) return {score, label:"สัญญาณดี", cls:"good"};
   if(score >= 50) return {score, label:"สัญญาณปานกลาง", cls:"mid"};
@@ -295,7 +338,6 @@ function setSignalQuality(label, cls){
   el.innerText = `คุณภาพสัญญาณ: ${label}`;
   el.className = `sig sig-${cls}`;
 }
-
 function updateWatermelonColor(fleshColor){
   const melon = document.getElementById("watermelon");
   melon.style.background = `radial-gradient(circle at center, ${fleshColor} 70%, #2e7d32 30%)`;
@@ -315,36 +357,69 @@ function analyzeSession(){
   const sigCls = sigScore >= 75 ? "good" : sigScore >= 50 ? "mid" : "bad";
   setSignalQuality(sigLabel, sigCls);
 
-  let group=classifyPre(avg.Q);
-  const Qcal=safe(CAL.Q.a + CAL.Q.b*safe(avg.Q,getFallback("Q")), 210);
-  const tauCal=safe(CAL.tau.a + CAL.tau.b*safe(avg.tau,getFallback("tau")), 0.08);
-  group=classifyPost(Qcal);
+  const tauFallbackCount = tapFeatures.filter(t => t.tauWasFallback).length;
+  const tauUsed = tauFallbackCount >= 2 ? getFallback("tau") : safe(avg.tau, getFallback("tau"));
+
+  const Quse = safe(avg.Q, getFallback("Q"));
+  const fMeanUse = safe(avg.fMean, getFallback("fMean"));
+  const fStdUse = safe(avg.fStd, getFallback("fStd"));
+  const fVarUse = safe(avg.fVar, getFallback("fVar"));
+  const hollowIndexUse = safe(avg.hollow, getFallback("hollow"));
+
+  const group = classifyRipenessAI(Quse, fMeanUse, fStdUse, fVarUse, hollowIndexUse);
 
   const ripe=ripenessFromGroup(group);
-  const brix=brixModel(group, Qcal, tauCal, avg.hollow);
-  const firmness=firmnessProxy(Qcal, avg.fVar);
-  const juice=juiceProxy(tauCal, Qcal);
-  const hProb=hollowProbability(avg.hollow);
-  const conf=clamp((confidenceScore(tapFeatures)+sigScore)/2, 45, 97);
+  const brix=predictBrixAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse);
+  const firmness=predictFirmnessAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse);
+  const juice=predictJuiceAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse);
+  const hPred=predictHollowAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse);
+  const hollowPercent = hPred * 100;
+  const hollowText = hollowLabel(hollowPercent);
 
-  const sweetStars = toStars(brix, 4.5, 14);
-  const firmStars = toStars(firmness, 0, 20);
-  const juiceStars = toStars(juice, 40, 90);
-  const hollowStars = 5 - toStars(hProb, 0, 1);
-  const confStars = toStars(conf, 50, 100);
+  // confidence should not be high for bad fruits / fallback tau / high hollow
+  const qVals = tapFeatures.map(t=>safe(t.Q, getFallback("Q")));
+  const qSpread = qVals.length ? Math.max(...qVals)-Math.min(...qVals) : 6;
+  const consistencyScore = clamp(100 - qSpread*6, 35, 95);
 
-  const melonScore = Math.round(
-    0.30 * (safe(brix,7) / 14 * 100) +
-    0.20 * (safe(firmness,8) / 20 * 100) +
-    0.15 * safe(juice,55) +
-    0.20 * ((1 - safe(hProb,0.35)) * 100) +
-    0.15 * safe(conf,65)
+  let qualityPlausibility = 90;
+  if (group === "A") qualityPlausibility -= 18;
+  if (hollowPercent > 20) qualityPlausibility -= 20;
+  if (hollowPercent > 28) qualityPlausibility -= 10;
+  if (tauFallbackCount >= 2) qualityPlausibility -= 15;
+  if (sigScore < 55) qualityPlausibility -= 10;
+  qualityPlausibility = clamp(qualityPlausibility, 20, 95);
+
+  const conf = clamp(
+    0.45 * sigScore +
+    0.30 * consistencyScore +
+    0.25 * qualityPlausibility,
+    25, 95
   );
 
+  const sweetStars = toStars(brix, 8, 14);
+  const firmStars = toStars(firmness, 3, 24);
+  const juiceStars = toStars(juice, 52, 86);
+  const hollowStars = 5 - toStars(hollowPercent, 0, 35);
+  const confStars = toStars(conf, 25, 95);
+
+  let score =
+    0.30 * (brix / 14 * 100) +
+    0.20 * (firmness / 24 * 100) +
+    0.15 * juice +
+    0.15 * conf +
+    0.20 * (100 - hollowPercent * 2.5);
+
+  if (group === "A") score -= 15;
+  if (hollowPercent > 20) score -= 20;
+  if (sigScore < 55) score -= 10;
+  if (tauFallbackCount >= 2) score -= 8;
+
+  const melonScore = Math.round(clamp(score, 0, 100));
+
   let buyText = "", buyClass = "", scoreExplain = "";
-  if (melonScore >= 80 && hProb < 0.35 && (group === "C" || group === "D")) {
-    buyText = "แนะนำให้ซื้อ"; buyClass = "buy"; scoreExplain = "คะแนนรวมดีมาก ความเสี่ยงโพรงต่ำ เหมาะซื้อ";
-  } else if (melonScore >= 60 && hProb < 0.65) {
+  if (melonScore >= 80 && hollowPercent < 10 && (group === "C" || group === "D")) {
+    buyText = "แนะนำให้ซื้อ"; buyClass = "buy"; scoreExplain = "คะแนนรวมดีมาก โครงสร้างดี เหมาะซื้อ";
+  } else if (melonScore >= 60 && hollowPercent < 20 && group !== "A") {
     buyText = "พอซื้อได้"; buyClass = "maybe"; scoreExplain = "คุณภาพพอใช้ แนะนำดูราคาและสภาพภายนอกเพิ่ม";
   } else {
     buyText = "ไม่แนะนำซื้อ"; buyClass = "no"; scoreExplain = "คะแนนรวมต่ำ หรือมีความเสี่ยงโพรง/สุกเกิน";
@@ -357,11 +432,11 @@ function analyzeSession(){
   result.innerHTML = `
     ความถี่หลักเฉลี่ย: ${safe(avg.fPeak,getFallback("fPeak")).toFixed(1)} Hz<br>
     ระดับความสุก: ${ripe.label} (${ripe.detail})<br>
-    ความหวาน: ${renderStars(sweetStars)} (${safe(brix,7).toFixed(1)} °Bx)<br>
-    ความกรอบ: ${renderStars(firmStars)}<br>
-    ความฉ่ำ: ${renderStars(juiceStars)}<br>
-    โพรงภายใน: ${renderStars(hollowStars)}<br>
-    ความเชื่อมั่น: ${renderStars(confStars)} (${safe(conf,65).toFixed(0)}%)
+    ความหวาน: ${renderStars(sweetStars)} (${safe(brix,9).toFixed(1)} °Bx)<br>
+    ความกรอบ: ${renderStars(firmStars)} (${safe(firmness,8).toFixed(1)})<br>
+    ความฉ่ำ: ${renderStars(juiceStars)} (${safe(juice,60).toFixed(0)}%)<br>
+    โพรงภายใน: ${renderStars(hollowStars)} (${hollowPercent.toFixed(1)}%)<br>
+    ความเชื่อมั่น: ${renderStars(confStars)} (${safe(conf,55).toFixed(0)}%)
   `;
 
   document.getElementById("melonScore").innerText = `${melonScore}/100`;
@@ -372,58 +447,51 @@ function analyzeSession(){
 
   document.getElementById("ripenessVal").innerText=`${ripe.label}`;
   document.getElementById("amiVal").innerText=`AMI: ${ripe.ami.toFixed(0)} (${ripe.detail})`;
-  document.getElementById("brixVal").innerText=`${safe(brix,7).toFixed(1)} °Bx`;
+  document.getElementById("brixVal").innerText=`${safe(brix,9).toFixed(1)} °Bx`;
   document.getElementById("sweetnessText").innerText=`${sweetnessLabel(brix)} • ${renderStars(sweetStars)}`;
   document.getElementById("firmVal").innerText=safe(firmness,8).toFixed(1);
-  document.getElementById("firmText").innerText=`${firmness>=12?"กรอบดี":firmness>=7?"กรอบปานกลาง":"กรอบน้อย"} • ${renderStars(firmStars)}`;
-  document.getElementById("juiceVal").innerText=`${safe(juice,55).toFixed(0)} %`;
-  document.getElementById("juiceText").innerText=`${juice>=70?"ฉ่ำมาก":juice>=55?"ฉ่ำปานกลาง":"ฉ่ำน้อย"} • ${renderStars(juiceStars)}`;
-  document.getElementById("hollowVal").innerText=`${(safe(hProb,0.35)*100).toFixed(0)} %`;
-  document.getElementById("hollowText").innerText=`${hProb>0.7?"มีโพรง":hProb>0.3?"เสี่ยงโพรง":"ปกติ"} • ${renderStars(hollowStars)}`;
-  document.getElementById("confVal").innerText=`${safe(conf,65).toFixed(0)} %`;
+  document.getElementById("firmText").innerText=`${firmness>=15?"กรอบดี":firmness>=9?"กรอบปานกลาง":"กรอบน้อย"} • ${renderStars(firmStars)}`;
+  document.getElementById("juiceVal").innerText=`${safe(juice,60).toFixed(0)} %`;
+  document.getElementById("juiceText").innerText=`${juice>=74?"ฉ่ำมาก":juice>=62?"ฉ่ำปานกลาง":"ฉ่ำน้อย"} • ${renderStars(juiceStars)}`;
+  document.getElementById("hollowVal").innerText=`${hollowPercent.toFixed(1)} %`;
+  document.getElementById("hollowText").innerText=`${hollowText} • ${renderStars(hollowStars)}`;
+  document.getElementById("confVal").innerText=`${safe(conf,55).toFixed(0)} %`;
   document.getElementById("groupVal").innerText=`ช่วงสุก: ${group} • ${renderStars(confStars)}`;
 
-  setBar("brixBar", (safe(brix,7)/14)*100);
-  setBar("firmBar", (safe(firmness,8)/20)*100);
-  setBar("juiceBar", safe(juice,55));
-  setBar("hollowBar", (1-safe(hProb,0.35))*100);
-  setBar("confBar", safe(conf,65));
+  setBar("brixBar", (safe(brix,9)/14)*100);
+  setBar("firmBar", (safe(firmness,8)/24)*100);
+  setBar("juiceBar", safe(juice,60));
+  setBar("hollowBar", (100 - hollowPercent*2.5));
+  setBar("confBar", safe(conf,55));
 
   document.getElementById("featureList").innerHTML = `
-    <li>Q_phone เฉลี่ย: ${safe(avg.Q,getFallback("Q")).toFixed(2)}</li>
-    <li>Q_calibrated: ${safe(Qcal,210).toFixed(2)}</li>
-    <li>tau_phone เฉลี่ย: ${safe(avg.tau,getFallback("tau")).toFixed(3)}</li>
-    <li>tau_calibrated: ${safe(tauCal,0.08).toFixed(3)}</li>
-    <li>f_mean: ${safe(avg.fMean,getFallback("fMean")).toFixed(1)} Hz</li>
-    <li>f_std: ${safe(avg.fStd,getFallback("fStd")).toFixed(1)} Hz</li>
-    <li>f_variance: ${safe(avg.fVar,getFallback("fVar")).toFixed(1)}</li>
-    <li>hollow proxy: ${safe(avg.hollow,getFallback("hollow")).toFixed(3)}</li>
+    <li>Q เฉลี่ย: ${Quse.toFixed(2)}</li>
+    <li>tau เฉลี่ย: ${safe(avg.tau,getFallback("tau")).toFixed(3)}</li>
+    <li>tau ใช้งานจริง: ${tauUsed.toFixed(3)} ${tauFallbackCount>=2 ? "(fallback)" : ""}</li>
+    <li>f_mean: ${fMeanUse.toFixed(1)} Hz</li>
+    <li>f_std: ${fStdUse.toFixed(1)} Hz</li>
+    <li>f_variance: ${fVarUse.toFixed(1)}</li>
+    <li>hollow_index: ${hollowIndexUse.toFixed(3)}</li>
+    <li>Hollow predicted: ${hollowPercent.toFixed(1)}%</li>
     <li>bandwidth (-3 dB): ${safe(avg.bw,getFallback("bw")).toFixed(2)}</li>
     <li>คุณภาพสัญญาณ: ${sigLabel} (${sigScore.toFixed(0)}%)</li>
     <li>Melon Score: ${melonScore}/100</li>`;
 
-  const msg = new SpeechSynthesisUtterance(`${buyText} แตงโมระดับ ${ripe.label} ความหวานประมาณ ${safe(brix,7).toFixed(1)} บริกซ์ คะแนนรวม ${melonScore} จาก 100`);
+  const msg = new SpeechSynthesisUtterance(`${buyText} แตงโมระดับ ${ripe.label} ความหวานประมาณ ${safe(brix,9).toFixed(1)} บริกซ์ คะแนนรวม ${melonScore} จาก 100`);
   speechSynthesis.cancel(); speechSynthesis.speak(msg);
 
   const history=JSON.parse(localStorage.getItem("history")||"[]");
-  history.unshift({time:new Date().toLocaleString(),level:ripe.label,brix:safe(brix,7),conf:safe(conf,65),score:melonScore,buy:buyText,sig:sigScore});
+  history.unshift({time:new Date().toLocaleString(),level:ripe.label,brix:safe(brix,9),conf:safe(conf,55),score:melonScore,buy:buyText,sig:sigScore});
   localStorage.setItem("history", JSON.stringify(history.slice(0,8)));
   updateHistory();
   setStatus("ตรวจวัดเสร็จแล้ว");
-}
-
-function confidenceScore(features){
-  const qVals=features.map(t=>safe(t.Q, getFallback("Q"))).filter(v=>isFinite(v));
-  if(qVals.length<2) return 45;
-  const qSpread=Math.max(...qVals)-Math.min(...qVals);
-  return clamp(94 - qSpread*1.5, 50, 97);
 }
 
 function updateTapProgress(){document.getElementById("tapProgress").innerText=`${tapFeatures.length}/${NUM_TAPS}`;}
 function updateHistory(){
   const historyList=document.getElementById("history");
   const history=JSON.parse(localStorage.getItem("history")||"[]");
-  historyList.innerHTML=history.map(item=>`<li>${item.time}: ${item.level} | ${safe(item.brix,7).toFixed(1)} °Bx | Score ${item.score}/100 | ${item.buy} | สัญญาณ ${safe(item.sig,60).toFixed(0)}%</li>`).join("");
+  historyList.innerHTML=history.map(item=>`<li>${item.time}: ${item.level} | ${safe(item.brix,9).toFixed(1)} °Bx | Score ${item.score}/100 | ${item.buy} | สัญญาณ ${safe(item.sig,60).toFixed(0)}%</li>`).join("");
 }
 function resetAll(){
   listening=false; if(rafId) cancelAnimationFrame(rafId);
@@ -459,5 +527,6 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 updateWatermelonColor("#ff5252");
 updateHistory();
 </script>
+
 </body>
 </html>
