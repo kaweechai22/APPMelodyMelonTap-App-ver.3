@@ -94,3 +94,10 @@
 - ใช้ AI Voice Summary ใหม่แบบเสถียร
 - ไม่มีเอฟเฟกต์โพรง overlay
 - ตรวจ syntax ผ่าน node --check
+
+
+## v16.1 Final Voice
+- ลบฟังก์ชันเสียงเก่าทุกชุด
+- เหลือ speakSummaryAI เพียงตัวเดียว
+- ลบประโยคเสียงเก่า “แตงโมระดับ...คะแนนรวม...”
+- ตรวจ syntax ผ่าน node --check

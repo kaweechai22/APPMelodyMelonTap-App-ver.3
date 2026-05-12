@@ -1,4 +1,4 @@
-const CACHE_NAME = "melon-clickfix-v15";
+const CACHE_NAME = "melon-final-voice-v16-1";
 const urlsToCache = ["./","./index.html","./manifest.json","./icon.png"];
 
 self.addEventListener("install", e => {

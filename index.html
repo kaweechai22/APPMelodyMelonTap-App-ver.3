@@ -60,7 +60,7 @@ body, main, .container, .card, .panel {
 🎙 AI Voice Assistant พร้อมอ่านสรุปผลอัตโนมัติ | เสียงอ่าน: พอดีกิน
 </div>
 
-  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-clickfix-v15</div>
+  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-final-voice-v16.1</div>
   <div class="card">
     <div id="watermelon" class="watermelon"></div>
     <div class="controls">
@@ -524,40 +524,7 @@ function perfectRipeLabel(score){
 
 
 // ===== AI Voice Assistant v11 =====
-function buildVoiceSummary(group, brix, firmnessText, juiceText, hollowText, buyText, confidence, ripeMeter){
-  let intro = "";
-  if (group === "C" || group === "B"){
-    intro = "แตงโมลูกนี้อยู่ในช่วงพอดีกิน";
-  } else if (group === "D"){
-    intro = "แตงโมลูกนี้ใกล้สุก";
-  } else if (group === "E"){
-    intro = "แตงโมลูกนี้ยังค่อนข้างดิบ";
-  } else {
-    intro = "แตงโมลูกนี้มีแนวโน้มสุกมาก";
-  }
 
-  let quality = `ความหวานประมาณ ${brix.toFixed(1)} บริกซ์ ${firmnessText} ${juiceText} ${hollowText}`;
-
-  let buy = "";
-  if (buyText.includes("น่าซื้อ")){
-    buy = "โดยรวมถือว่าเป็นแตงโมคุณภาพดี น่าซื้อ";
-  } else if (buyText.includes("พิจารณา")){
-    buy = "คุณภาพโดยรวมอยู่ในระดับปานกลาง ควรพิจารณาร่วมกับลักษณะภายนอก";
-  } else {
-    buy = "พบความเสี่ยงด้านคุณภาพ ควรพิจารณาก่อนซื้อ";
-  }
-
-  let conf = "";
-  if (confidence < 58){
-    conf = "ผลการวัดยังไม่นิ่ง กรุณาเคาะใหม่อีกครั้ง";
-  } else if (confidence < 75){
-    conf = "ผลการวัดมีความเชื่อมั่นระดับปานกลาง";
-  } else {
-    conf = "ผลการวัดมีความเชื่อมั่นสูง";
-  }
-
-  return `${intro} ${quality} ระดับความสุกประมาณ ${ripeMeter.toFixed(0)} จาก 100 ${buy} ${conf}`;
-}
 
 
 
@@ -715,19 +682,22 @@ function analyzeSession(){
     <li>คุณภาพสัญญาณ: ${sigLabel} (${sigScore.toFixed(0)}%)</li>
     <li>Melon Score: ${melonScore}/100</li>`;
 
-  const msg = new SpeechSynthesisUtterance(`${buyText} แตงโมระดับ ${ripe.label} ความหวานประมาณ ${safe(brix,9).toFixed(1)} บริกซ์ คะแนนรวม ${melonScore} จาก 100`);
-  speechSynthesis.cancel(); speechSynthesis.speak(msg);
-
   const history=JSON.parse(localStorage.getItem("history")||"[]");
   history.unshift({time:new Date().toLocaleString(),level:ripe.label,brix:safe(brix,9),conf:safe(conf,55),score:melonScore,buy:buyText,sig:sigScore});
   localStorage.setItem("history", JSON.stringify(history.slice(0,8)));
   updateHistory();
+  
+  speakSummaryAI(group, brix, firmness, juice, hollowPercent, buyText, conf, ripeMeter);
   setStatus("ตรวจวัดเสร็จแล้ว");
 }
 
 function updateTapProgress(){document.getElementById("tapProgress").innerText=`${tapFeatures.length}/${NUM_TAPS}`;}
 
 // ===== Stable AI Voice v15 =====
+
+
+
+// ===== FINAL AI VOICE SUMMARY v16.1 =====
 function speakSummaryAI(group, brix, firmness, juice, hollowPercent, buyText, confidence, ripeMeter){
   let intro = "";
   if(group === "C" || group === "B"){
@@ -818,40 +788,7 @@ updateWatermelonColor("#ff5252");
 updateHistory();
 
 // ===== Voice wording override v11.2 =====
-function buildVoiceSummary(group, brix, firmnessText, juiceText, hollowText, buyText, confidence, ripeMeter){
-  let intro = "";
-  if (group === "C" || group === "B"){
-    intro = "แตงโมลูกนี้อยู่ในช่วงพอดีกิน";
-  } else if (group === "D"){
-    intro = "แตงโมลูกนี้ใกล้สุก";
-  } else if (group === "E"){
-    intro = "แตงโมลูกนี้ยังค่อนข้างดิบ";
-  } else {
-    intro = "แตงโมลูกนี้มีแนวโน้มสุกมาก";
-  }
 
-  let quality = `ความหวานประมาณ ${brix.toFixed(1)} บริกซ์ ${firmnessText} ${juiceText} ${hollowText}`;
-
-  let buy = "";
-  if (buyText.includes("น่าซื้อ")){
-    buy = "โดยรวมถือว่าเป็นแตงโมคุณภาพดี น่าซื้อ";
-  } else if (buyText.includes("พิจารณา")){
-    buy = "คุณภาพโดยรวมอยู่ในระดับปานกลาง ควรพิจารณาร่วมกับลักษณะภายนอก";
-  } else {
-    buy = "พบความเสี่ยงด้านคุณภาพ ควรพิจารณาก่อนซื้อ";
-  }
-
-  let conf = "";
-  if (confidence < 58){
-    conf = "ผลการวัดยังไม่นิ่ง กรุณาเคาะใหม่อีกครั้ง";
-  } else if (confidence < 75){
-    conf = "ผลการวัดมีความเชื่อมั่นระดับปานกลาง";
-  } else {
-    conf = "ผลการวัดมีความเชื่อมั่นสูง";
-  }
-
-  return `${intro} ${quality} ระดับพอดีกินประมาณ ${ripeMeter.toFixed(0)} จาก 100 ${buy} ${conf}`;
-}
 
 
 
@@ -886,62 +823,7 @@ function qualityLevelText(score){
 }
 
 // ===== REAL AI VOICE v11.3 =====
-function speakSummaryAI(group, brix, firmnessText, juiceText, hollowText, buyText, confidence, ripeMeter){
-  let summary = "";
 
-  if(group === "C" || group === "B"){
-    summary += "แตงโมลูกนี้อยู่ในช่วงพอดีกิน ";
-  }else if(group === "D"){
-    summary += "แตงโมลูกนี้ใกล้สุก ";
-  }else if(group === "E"){
-    summary += "แตงโมลูกนี้ยังค่อนข้างดิบ ";
-  }else{
-    summary += "แตงโมลูกนี้มีแนวโน้มสุกมาก ";
-  }
-
-  summary += `ความหวานประมาณ ${brix.toFixed(1)} บริกซ์ `;
-  const crispPct = crispPercent(firmness);
-  summary += `ความกรอบประมาณ ${crispPct.toFixed(0)} เปอร์เซ็นต์ ${crispLabel(crispPct)} `;
-  summary += `${juiceText} `;
-  summary += `${hollowVoiceLabel(hollowPercent)} `;
-
-  summary += `ระดับพอดีกินประมาณ ${ripeMeter.toFixed(0)} จาก 100 `;
-
-  summary += qualityLevelText(ripeMeter) + " ";
-
-  if(buyText.includes("น่าซื้อ")){
-    
-  }else if(buyText.includes("พิจารณา")){
-    
-  }else{
-    
-  }
-
-  if(confidence < 58){
-    summary += "ผลการวัดยังไม่นิ่ง กรุณาเคาะใหม่อีกครั้ง";
-  }else if(confidence < 75){
-    summary += "ผลการวัดมีความเชื่อมั่นระดับปานกลาง";
-  }else{
-    summary += "ผลการวัดมีความเชื่อมั่นสูง";
-  }
-
-  try{
-    speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(summary);
-    utter.lang = "th-TH";
-    utter.rate = 0.92;
-    utter.pitch = 1.0;
-    utter.volume = 1.0;
-
-    const voices = speechSynthesis.getVoices();
-    const thaiVoice = voices.find(v => v.lang && v.lang.toLowerCase().includes("th"));
-    if(thaiVoice){ utter.voice = thaiVoice; }
-
-    speechSynthesis.speak(utter);
-  }catch(e){
-    console.log(e);
-  }
-}
 
 </script>
 
