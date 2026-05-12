@@ -87,3 +87,10 @@
 - ไม่มี overlay, ไม่มี hollow visual, ไม่มีสีขอบจากโพรง
 - แสดงโพรงด้วยตัวเลข % และข้อความเท่านั้น
 - เน้นให้ปุ่มกดได้และแอปเสถียรบนมือถือ/PWA
+
+
+## v15 Click Fix
+- แก้ JavaScript syntax error ที่ทำให้ปุ่มกดไม่ได้
+- ใช้ AI Voice Summary ใหม่แบบเสถียร
+- ไม่มีเอฟเฟกต์โพรง overlay
+- ตรวจ syntax ผ่าน node --check

@@ -60,7 +60,7 @@ body, main, .container, .card, .panel {
 🎙 AI Voice Assistant พร้อมอ่านสรุปผลอัตโนมัติ | เสียงอ่าน: พอดีกิน
 </div>
 
-  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-stable-no-effect-v14</div>
+  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-clickfix-v15</div>
   <div class="card">
     <div id="watermelon" class="watermelon"></div>
     <div class="controls">
@@ -559,16 +559,7 @@ function buildVoiceSummary(group, brix, firmnessText, juiceText, hollowText, buy
   return `${intro} ${quality} ระดับความสุกประมาณ ${ripeMeter.toFixed(0)} จาก 100 ${buy} ${conf}`;
 }
 
-function speakSummaryAI(group, brix, firmnessLabel(firmness), juiceLabel(juice), hollowLabel(hollowPercent), buyText, conf, ripeMeter);
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "th-TH";
-    utter.rate = 0.96;
-    utter.pitch = 1.0;
-    speechSynthesis.speak(utter);
-  }catch(e){
-    console.log(e);
-  }
-}
+
 
 function analyzeSession(){
   const avg={};
@@ -735,6 +726,58 @@ function analyzeSession(){
 }
 
 function updateTapProgress(){document.getElementById("tapProgress").innerText=`${tapFeatures.length}/${NUM_TAPS}`;}
+
+// ===== Stable AI Voice v15 =====
+function speakSummaryAI(group, brix, firmness, juice, hollowPercent, buyText, confidence, ripeMeter){
+  let intro = "";
+  if(group === "C" || group === "B"){
+    intro = "แตงโมลูกนี้อยู่ในช่วงพอดีกิน";
+  }else if(group === "D"){
+    intro = "แตงโมลูกนี้ใกล้สุก";
+  }else if(group === "E"){
+    intro = "แตงโมลูกนี้ยังค่อนข้างดิบ";
+  }else{
+    intro = "แตงโมลูกนี้มีแนวโน้มสุกมาก";
+  }
+
+  const crispPct = crispPercent(firmness);
+  const hollowText = hollowVoiceLabel(hollowPercent);
+  const qualityText = qualityLevelText(ripeMeter);
+
+  let confText = "";
+  if(confidence < 58){
+    confText = "ผลการวัดยังไม่นิ่ง กรุณาเคาะใหม่อีกครั้ง";
+  }else if(confidence < 75){
+    confText = "ผลการวัดมีความเชื่อมั่นระดับปานกลาง";
+  }else{
+    confText = "ผลการวัดมีความเชื่อมั่นสูง";
+  }
+
+  const summary =
+    `${intro} ` +
+    `ความหวานประมาณ ${brix.toFixed(1)} บริกซ์ ` +
+    `ความกรอบประมาณ ${crispPct.toFixed(0)} เปอร์เซ็นต์ ${crispLabel(crispPct)} ` +
+    `${juiceLabel(juice)} ` +
+    `${hollowText} ` +
+    `${qualityText} ` +
+    `${confText}`;
+
+  try{
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(summary);
+    utter.lang = "th-TH";
+    utter.rate = 0.92;
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+    const voices = speechSynthesis.getVoices();
+    const thaiVoice = voices.find(v => v.lang && v.lang.toLowerCase().includes("th"));
+    if(thaiVoice) utter.voice = thaiVoice;
+    speechSynthesis.speak(utter);
+  }catch(e){
+    console.log(e);
+  }
+}
+
 function updateHistory(){
   const historyList=document.getElementById("history");
   const history=JSON.parse(localStorage.getItem("history")||"[]");

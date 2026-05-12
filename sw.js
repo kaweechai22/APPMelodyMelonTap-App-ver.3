@@ -1,4 +1,4 @@
-const CACHE_NAME = "melon-stable-no-effect-v14";
+const CACHE_NAME = "melon-clickfix-v15";
 const urlsToCache = ["./","./index.html","./manifest.json","./icon.png"];
 
 self.addEventListener("install", e => {
