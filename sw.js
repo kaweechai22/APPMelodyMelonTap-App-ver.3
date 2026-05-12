@@ -1,4 +1,4 @@
-const CACHE_NAME = "melodymelon-v11-1-poddee";
+const CACHE_NAME = "melodymelon-v11-2-voicefix";
 const urlsToCache = ["./","./index.html","./manifest.json","./icon.png"];
 
 self.addEventListener("install", e => {
