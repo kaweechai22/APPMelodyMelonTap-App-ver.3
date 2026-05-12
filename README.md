@@ -50,3 +50,21 @@
 - ระดับการสุกไม่ใช้ Q อย่างเดียวแล้ว
 - ใช้ Brix, Firmness, Juice, Hollow, Q, tau, f_mean, f_std, f_variance ร่วมกัน
 - แสดงคะแนนย่อย E/D/C/A ใน feature list เพื่อใช้ตรวจสอบโมเดล
+
+
+## v10 Perfect Ripe AI
+- Optimize ระดับ "สุกพอดี" เป็นหลัก
+- ใช้ distance-to-sweet-spot model
+- ใช้ Brix/Firmness/Juice/Hollow/Q/tau ร่วมกัน
+- แสดง Perfect Ripe Meter 0-100
+
+
+## v11 AI Voice Assistant
+- อ่านผลวิเคราะห์อัตโนมัติด้วยเสียงภาษาไทย
+- ปรับข้อความตามคุณภาพแตงโม
+- เตือนเมื่อ confidence ต่ำ
+- สรุประดับความสุก ความหวาน ความกรอบ ความฉ่ำ และโพรง
+
+
+## v11.1
+- เปลี่ยนข้อความ “กำลังกิน” เป็น “พอดีกิน” ทั้งในหน้าจอและเสียงอ่าน

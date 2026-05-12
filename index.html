@@ -47,7 +47,11 @@
 <body>
 <div class="wrap">
   <h1>MelodyMelonTap 🎤🍉</h1>
-  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-ripeness-score-v9</div>
+<div id="voiceBox" style="margin-top:12px;padding:10px;border-radius:12px;background:#eef6f3;font-size:.95rem;color:#355;">
+🎙 AI Voice Assistant พร้อมอ่านสรุปผลอัตโนมัติ
+</div>
+
+  <div style="text-align:center;font-size:.95rem;color:#60707a;margin-top:-.4rem;margin-bottom:.8rem;">Version: v2026.05.12-voice-ai-v11</div>
   <div class="card">
     <div id="watermelon" class="watermelon"></div>
     <div class="controls">
@@ -472,6 +476,93 @@ function ripenessScoreExplain(result){
   return `E:${s.E.toFixed(0)} D:${s.D.toFixed(0)} C:${s.C.toFixed(0)} A:${s.A.toFixed(0)}`;
 }
 
+
+// ===== Perfect Ripe AI v10 =====
+function perfectRipeDistance(brix, firmness, juice, hollow, Q, tau){
+  // sweet spot จากข้อมูลชุดจริงที่ "กินอร่อยที่สุด"
+  const target = {
+    brix: 11.8,
+    firmness: 13.5,
+    juice: 70,
+    hollow: 5,
+    Q: 11.5,
+    tau: 0.11
+  };
+
+  const d =
+    Math.pow((brix-target.brix)/1.4,2) +
+    Math.pow((firmness-target.firmness)/4.5,2) +
+    Math.pow((juice-target.juice)/7.5,2) +
+    Math.pow((hollow-target.hollow)/7.0,2) +
+    Math.pow((Q-target.Q)/2.8,2) +
+    Math.pow((tau-target.tau)/0.05,2);
+
+  return Math.sqrt(d);
+}
+
+function perfectRipeMeter(distance){
+  // ยิ่งใกล้ sweet spot ยิ่งคะแนนสูง
+  return clamp(100 - distance*18, 0, 100);
+}
+
+function perfectRipeLabel(score){
+  if(score < 35) return {group:"E", text:"ดิบ"};
+  if(score < 60) return {group:"D", text:"ใกล้สุก"};
+  if(score < 85) return {group:"C", text:"สุกพอดี"};
+  if(score <= 100) return {group:"B", text:"สุกมากกำลังกิน"};
+  return {group:"A", text:"สุกเกิน"};
+}
+
+
+// ===== AI Voice Assistant v11 =====
+function buildVoiceSummary(group, brix, firmnessText, juiceText, hollowText, buyText, confidence, ripeMeter){
+  let intro = "";
+  if (group === "C" || group === "B"){
+    intro = "แตงโมลูกนี้อยู่ในช่วงกำลังกิน";
+  } else if (group === "D"){
+    intro = "แตงโมลูกนี้ใกล้สุก";
+  } else if (group === "E"){
+    intro = "แตงโมลูกนี้ยังค่อนข้างดิบ";
+  } else {
+    intro = "แตงโมลูกนี้มีแนวโน้มสุกมาก";
+  }
+
+  let quality = `ความหวานประมาณ ${brix.toFixed(1)} บริกซ์ ${firmnessText} ${juiceText} ${hollowText}`;
+
+  let buy = "";
+  if (buyText.includes("น่าซื้อ")){
+    buy = "โดยรวมถือว่าเป็นแตงโมคุณภาพดี น่าซื้อ";
+  } else if (buyText.includes("พิจารณา")){
+    buy = "คุณภาพโดยรวมอยู่ในระดับปานกลาง ควรพิจารณาร่วมกับลักษณะภายนอก";
+  } else {
+    buy = "พบความเสี่ยงด้านคุณภาพ ควรพิจารณาก่อนซื้อ";
+  }
+
+  let conf = "";
+  if (confidence < 58){
+    conf = "ผลการวัดยังไม่นิ่ง กรุณาเคาะใหม่อีกครั้ง";
+  } else if (confidence < 75){
+    conf = "ผลการวัดมีความเชื่อมั่นระดับปานกลาง";
+  } else {
+    conf = "ผลการวัดมีความเชื่อมั่นสูง";
+  }
+
+  return `${intro} ${quality} ระดับความสุกประมาณ ${ripeMeter.toFixed(0)} จาก 100 ${buy} ${conf}`;
+}
+
+function speakSummary(text){
+  try{
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "th-TH";
+    utter.rate = 0.96;
+    utter.pitch = 1.0;
+    speechSynthesis.speak(utter);
+  }catch(e){
+    console.log(e);
+  }
+}
+
 function analyzeSession(){
   const avg={};
   ['fPeak','Q','tau','fMean','fStd','fVar','hollow','bw','highRatio','lowRatio','flatness'].forEach(k=>{
@@ -505,6 +596,17 @@ function analyzeSession(){
   const juice=predictJuiceAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse, highRatioUse, lowRatioUse, flatnessUse);
   const hPred=predictHollowAI(Quse, tauUsed, fMeanUse, fStdUse, fVarUse, hollowIndexUse, highRatioUse, lowRatioUse, flatnessUse);
   const hollowPercent = hPred * 100;
+
+  // Perfect Ripe AI
+  const ripeDistance = perfectRipeDistance(
+    brix, firmness, juice, hollowPercent, Quse, tauUsed
+  );
+
+  const ripeMeter = perfectRipeMeter(ripeDistance);
+  const ripeInfo = perfectRipeLabel(ripeMeter);
+
+  group = ripeInfo.group;
+
   const ripenessAI = scoreRipenessAI(Quse, tauUsed, brix, firmness, juice, hollowPercent, fMeanUse, fStdUse, fVarUse);
   group = ripenessAI.group;
   const hollowText = hollowLabel(hollowPercent);
@@ -607,7 +709,7 @@ function analyzeSession(){
     <li>hollow_index: ${hollowIndexUse.toFixed(3)}</li>
     <li>Hollow predicted: ${hollowPercent.toFixed(1)}%</li>
     <li>Ripeness scores: ${ripenessScoreExplain(ripenessAI)}</li>
-    <li>Ripeness confidence: ${ripenessAI.confidence.toFixed(0)}%</li>
+    <li>Perfect ripe meter: ${ripeMeter.toFixed(0)}/100</li><li>Distance to sweet spot: ${ripeDistance.toFixed(2)}</li><li>Ripeness confidence: ${ripenessAI.confidence.toFixed(0)}%</li>
     <li>high_ratio: ${highRatioUse.toFixed(3)}</li>
     <li>low_ratio: ${lowRatioUse.toFixed(3)}</li>
     <li>spectral flatness: ${flatnessUse.toFixed(3)}</li>

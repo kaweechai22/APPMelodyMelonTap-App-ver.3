@@ -1,4 +1,4 @@
-const CACHE_NAME = "melody-melon-tap-v2026-05-12-ripeness-v9";
+const CACHE_NAME = "melodymelon-v11-1-poddee";
 const urlsToCache = ["./","./index.html","./manifest.json","./icon.png"];
 
 self.addEventListener("install", e => {
